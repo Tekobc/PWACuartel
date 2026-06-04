@@ -1,71 +1,93 @@
-# Checklist Bomberos
+# PWACuartel
 
-Proyecto simple para gestión de revisión de unidades de bomberos.
+PWA para la revisión de unidades, herramientas y materiales de un cuartel de bomberos.
 
-## Estructura
+La aplicación permite iniciar sesión por legajo, seleccionar una unidad, completar una rutina de inspección y registrar el estado de cada herramienta o material.
 
-- `/backend`: servidor Node.js con Express y PostgreSQL.
-- `/frontend`: app React con Vite.
-- `/backend/db/schema.sql`: script para crear tablas y datos de ejemplo.
+## Características
 
-## Backend
+- Aplicación web progresiva.
+- Frontend desarrollado con React y Vite.
+- Backend REST con Node.js y Express.
+- Base de datos SQLite.
+- Autenticación con JWT.
+- Primer login con creación de contraseña.
+- Registro de inspecciones por unidad.
+- Historial de inspecciones realizadas.
+- Validación de estados de herramientas y materiales.
+- Observación obligatoria cuando un elemento no está o no está acondicionado.
 
-### Requisitos
+## Estados disponibles
 
-- SQLite como base ligera.
-- El archivo de datos se crea automáticamente en `backend/bomberos.db`.
+Cada herramienta o material puede registrarse con uno de los siguientes estados:
 
-### Preparar
+- `ok`: el elemento está presente y en condiciones.
+- `no_esta`: el elemento no se encuentra en la unidad.
+- `sin_acondicionar`: el elemento está presente, pero no está en condiciones.
 
-1. Instalar dependencias:
-   ```bash
-   cd backend
-   npm install
-   ```
-2. Crear o actualizar la base de datos SQLite:
-   ```bash
-   npm run init-db
-   ```
-3. Ejecutar el servidor:
-   ```bash
-   npm run dev
-   ```
+Cuando el estado es `no_esta` o `sin_acondicionar`, se debe cargar una observación.
 
-> Alternativamente puedes usar `SQLITE_FILE` para apuntar a otro archivo SQLite.
+## Tecnologías utilizadas
 
-### Endpoints
+### Frontend
 
-- `GET /unidades`
-- `GET /rutina/:unidad_id`
-- `POST /inspecciones`
-- `GET /inspecciones`
+- React
+- Vite
+- CSS
+- Service Worker
+- Web App Manifest
 
-## Frontend
+### Backend
 
-### Preparar
+- Node.js
+- Express
+- SQLite
+- JWT
+- bcryptjs
+- CORS
+- dotenv
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## Estructura del proyecto
 
-La app correrá en `http://localhost:5173`.
-
-## Ejemplo de POST /inspecciones
-
-```bash
-curl -X POST http://localhost:4000/inspecciones \
-  -H "Content-Type: application/json" \
-  -d '{
-    "unidad_id": 1,
-    "notas": "Revisión post-servicio",
-    "detalles": [
-      {"herramienta_id": 1, "estado": "ok"},
-      {"herramienta_id": 2, "estado": "no_esta", "observacion": "Falta el hacha"},
-      {"herramienta_id": 3, "estado": "sin_acondicionar", "observacion": "Linterna con batería baja"}
-    ]
-  }'
-```
-
-> Si el estado es `no_esta` o `sin_acondicionar`, el campo `observacion` es obligatorio.
+```txt
+PWACuartel/
+├── backend/
+│   ├── app.js
+│   ├── init-db.js
+│   ├── controllers/
+│   │   ├── inspeccionesController.js
+│   │   ├── rutinaController.js
+│   │   └── unidadesController.js
+│   ├── db/
+│   │   ├── bomberos.db
+│   │   ├── index.js
+│   │   └── schema.sql
+│   ├── middleware/
+│   │   └── auth.js
+│   ├── routes/
+│   │   ├── auth.js
+│   │   ├── inspecciones.js
+│   │   ├── rutina.js
+│   │   └── unidades.js
+│   └── package.json
+├── frontend/
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── public/
+│   │   ├── manifest.json
+│   │   └── sw.js
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   ├── styles.css
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   ├── pages/
+│   │   │   ├── Inspeccion.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── PrimerLogin.jsx
+│   │   │   ├── Resumen.jsx
+│   │   │   └── Unidades.jsx
+│   │   └── services/
+│   │       └── api.js
+└── README.md
