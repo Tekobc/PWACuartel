@@ -1,0 +1,98 @@
+import { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
+
+export default function Login({ onLoginSuccess, onPrimerLogin }) {
+  const { login, error } = useContext(AuthContext);
+  const [legajo, setLegajo] = useState('');
+  const [contrasena, setContrasena] = useState('');
+  const [cargando, setCargando] = useState(false);
+  const [errorLocal, setErrorLocal] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setCargando(true);
+    setErrorLocal('');
+
+    try {
+      const resultado = await login(legajo, contrasena);
+
+      // Si es primer login
+      if (resultado.primer_login) {
+        onPrimerLogin(resultado);
+        return;
+      }
+
+      // Login exitoso
+      onLoginSuccess();
+    } catch (err) {
+      setErrorLocal(err.message || 'Error en login');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  return (
+    <main className="login-page">
+      <div className="login-container">
+        <div className="login-header">
+          <h1>🚒 Cuartel 80</h1>
+          <p>Sistema de Inspecciones</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="legajo">Legajo</label>
+            <input
+              id="legajo"
+              type="text"
+              placeholder="80/001"
+              value={legajo}
+              onChange={(e) => setLegajo(e.target.value)}
+              required
+              aria-label="Número de legajo"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="contrasena">Contraseña</label>
+            <input
+              id="contrasena"
+              type="password"
+              placeholder="Ingrese su contraseña"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+              required
+              aria-label="Contraseña"
+            />
+          </div>
+
+          {errorLocal && (
+            <div className="alert alert-error">
+              {errorLocal}
+            </div>
+          )}
+
+          {error && (
+            <div className="alert alert-error">
+              {error}
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            disabled={cargando}
+            aria-label="Ingresar al sistema"
+          >
+            {cargando ? 'Ingresando...' : 'Ingresar'}
+          </button>
+        </form>
+
+        <div className="login-footer">
+          <p className="text-small">
+            © 2025 Cuartel 80 - Sistema de Inspecciones
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
