@@ -724,7 +724,35 @@ a:focus-visible {
   font-size: var(--font-size-base);
   margin-top: var(--spacing-md);
 }
+.legajo-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
 
+.legajo-prefix {
+  padding: var(--spacing-md);
+  background: var(--color-bg-tertiary);
+  border-right: 1px solid var(--color-border);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  min-width: 50px;
+  text-align: center;
+}
+
+.legajo-input-group input {
+  border: none;
+  flex: 1;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-base);
+}
+
+.legajo-input-group input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--color-primary-light);
+}
 .login-footer {
   text-align: center;
   margin-top: var(--spacing-lg);

@@ -3,7 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
-
+const CENTRAL_PREFIX = '80/';
 // 2. SEGUNDO: crear la aplicación
 const app = express();
 

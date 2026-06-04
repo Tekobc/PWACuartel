@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
-
+const CENTRAL_PREFIX = '80/';
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -26,6 +26,11 @@ export function AuthProvider({ children }) {
   const login = async (legajo, contrasena) => {
     setError(null);
     try {
+      // Agregar prefijo automáticamente
+      if (!legajo.includes('/')) {
+        legajo = CENTRAL_PREFIX + legajo;
+      }
+
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

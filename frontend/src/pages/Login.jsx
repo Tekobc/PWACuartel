@@ -1,6 +1,8 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
+const CENTRAL_PREFIX = '80/';
+
 export default function Login({ onLoginSuccess, onPrimerLogin }) {
   const { login, error } = useContext(AuthContext);
   const [legajo, setLegajo] = useState('');
@@ -42,15 +44,25 @@ export default function Login({ onLoginSuccess, onPrimerLogin }) {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label htmlFor="legajo">Legajo</label>
-            <input
-              id="legajo"
-              type="text"
-              placeholder="80/001"
-              value={legajo}
-              onChange={(e) => setLegajo(e.target.value)}
-              required
-              aria-label="Número de legajo"
-            />
+            <div className="legajo-input-group">
+              <span className="legajo-prefix">80/</span>
+              <input
+                id="legajo"
+                type="text"
+                placeholder="001"
+                maxLength="3"
+                pattern="[0-9]{3}"
+                value={legajo}
+                onChange={(e) => {
+                  // Solo permite números
+                  const valor = e.target.value.replace(/[^0-9]/g, '');
+                  // Máximo 3 dígitos
+                  setLegajo(valor.slice(0, 3));
+                }}
+                required
+                aria-label="Últimos 3 dígitos del legajo"
+              />
+            </div>
           </div>
 
           <div className="form-group">

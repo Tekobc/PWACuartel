@@ -5,18 +5,23 @@ const bcrypt = require('bcryptjs');
 const db = require('../db');
 
 // POST /auth/login - Primer intento de login
+const CENTRAL_PREFIX = '80/';
+
 router.post('/login', async (req, res) => {
   try {
-    const { legajo, contrasena } = req.body;
-
-    // Validaciones
+    let { legajo, contrasena } = req.body;
+    
     if (!legajo || !contrasena) {
       return res.status(400).json({ 
         error: 'Legajo y contraseña requeridos' 
       });
     }
 
-    // Buscar usuario por legajo
+    // Agregar prefijo automáticamente
+    if (!legajo.includes('/')) {
+      legajo = CENTRAL_PREFIX + legajo;
+    }
+
     const usuario = db.prepare(
       'SELECT * FROM usuarios WHERE legajo = ?'
     ).get(legajo);
