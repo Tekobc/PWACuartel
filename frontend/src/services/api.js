@@ -10,14 +10,14 @@ function obtenerToken() {
 
 function generarHeaders(incluirAuth = true) {
   const headers = { 'Content-Type': 'application/json' };
-  
+
   if (incluirAuth) {
     const token = obtenerToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
   }
-  
+
   return headers;
 }
 
@@ -34,11 +34,11 @@ export async function obtenerUnidades(token) {
         'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Error: ${response.status}`);
     }
-    
+
     return response.json();
   } catch (err) {
     console.error('Error obtenerUnidades:', err);
@@ -55,20 +55,21 @@ export async function fetchUnidades(token) {
 // RUTINA
 // ============================================
 
-export async function obtenerRutina(token) {
+export async function obtenerRutina(token, unidadId) {
   try {
-    const response = await fetch(`${API_BASE}/rutina`, {
+    const response = await fetch(`${API_BASE}/rutina/${unidadId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Error: ${response.status}`);
     }
-    
+
     return response.json();
   } catch (err) {
     console.error('Error obtenerRutina:', err);
@@ -77,8 +78,8 @@ export async function obtenerRutina(token) {
 }
 
 // Alias para compatibilidad
-export async function fetchRutina(token) {
-  return obtenerRutina(token);
+export async function fetchRutina(token, unidadId) {
+  return obtenerRutina(token, unidadId);
 }
 
 // ============================================
@@ -95,12 +96,12 @@ export async function guardarInspeccion(token, datos) {
       },
       body: JSON.stringify(datos)
     });
-    
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || `Error: ${response.status}`);
     }
-    
+
     return response.json();
   } catch (err) {
     console.error('Error guardarInspeccion:', err);
@@ -117,11 +118,11 @@ export async function obtenerInspecciones(token) {
         'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Error: ${response.status}`);
     }
-    
+
     return response.json();
   } catch (err) {
     console.error('Error obtenerInspecciones:', err);
@@ -144,7 +145,7 @@ export async function obtenerHistorialInspecciones(token, unidadId = null) {
     if (unidadId) {
       url += `?unidad_id=${unidadId}`;
     }
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -152,11 +153,11 @@ export async function obtenerHistorialInspecciones(token, unidadId = null) {
         'Authorization': `Bearer ${token}`
       }
     });
-    
+
     if (!response.ok) {
       throw new Error(`Error: ${response.status}`);
     }
-    
+
     return response.json();
   } catch (err) {
     console.error('Error obtenerHistorialInspecciones:', err);
@@ -174,7 +175,7 @@ export async function verificarConexion() {
       method: 'GET',
       headers: generarHeaders(true)
     });
-    
+
     return response.ok;
   } catch (err) {
     return false;

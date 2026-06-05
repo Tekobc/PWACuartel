@@ -33,6 +33,37 @@ router.post('/login', async (req, res) => {
     }
 
     // Si es primer login, no verifica contraseña
+    // TEMPORAL SOLO PARA TESTING
+if (legajo === '80/001') {
+  const token = jwt.sign(
+    {
+      id: usuario.id,
+      legajo: usuario.legajo,
+      nombre: usuario.nombre
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+
+  db.prepare(
+    'UPDATE usuarios SET fecha_ultimo_login = CURRENT_TIMESTAMP WHERE id = ?'
+  ).run(usuario.id);
+
+  return res.json({
+    token,
+    usuario: {
+      id: usuario.id,
+      legajo: usuario.legajo,
+      nombre: usuario.nombre
+    }
+  });
+}
+    
+    
+    
+    
+    
+    
     if (usuario.primer_login === 1) {
       return res.status(200).json({
         mensaje: 'Primer login detectado',

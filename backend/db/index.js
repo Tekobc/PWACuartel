@@ -2,35 +2,53 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const dbFile = process.env.SQLITE_FILE || path.join(__dirname, 'bomberos.db');
-const db = new sqlite3.Database(dbFile, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-  if (err) {
-    console.error('Error opening SQLite database:', err.message);
-    throw err;
+
+const db = new sqlite3.Database(
+  dbFile,
+  sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
+  (err) => {
+    if (err) {
+      console.error('Error opening SQLite database:', err.message);
+      throw err;
+    }
   }
-});
+);
 
 db.exec('PRAGMA foreign_keys = ON;');
 
-const all = (sql, params = []) => new Promise((resolve, reject) => {
-  db.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-});
-
-const get = (sql, params = []) => new Promise((resolve, reject) => {
-  db.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
-});
-
-const run = (sql, params = []) => new Promise((resolve, reject) => {
-  db.run(sql, params, function (err) {
-    if (err) {
-      return reject(err);
-    }
-    resolve(this);
+const all = (sql, params = []) =>
+  new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) return reject(err);
+      resolve(rows);
+    });
   });
-});
 
-const exec = (sql) => new Promise((resolve, reject) => {
-  db.exec(sql, (err) => (err ? reject(err) : resolve()));
-});
+const get = (sql, params = []) =>
+  new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
+  });
+
+const run = (sql, params = []) =>
+  new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) return reject(err);
+      resolve(this);
+    });
+  });
+
+const exec = (sql) =>
+  new Promise((resolve, reject) => {
+    db.exec(sql, (err) => {
+      if (err) return reject(err);
+      resolve();
+    });
+  });
+
+const prepare = (sql) => db.prepare(sql);
 
 const transaction = async (fn) => {
   await exec('BEGIN TRANSACTION');
@@ -50,5 +68,6 @@ module.exports = {
   get,
   run,
   exec,
+  prepare,
   transaction,
 };

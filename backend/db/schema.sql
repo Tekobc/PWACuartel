@@ -34,6 +34,11 @@ INSERT OR IGNORE INTO usuarios (legajo, nombre, primer_login) VALUES
 ('80/004', 'Bombero 004', 1),
 ('80/005', 'Bombero 005', 1);
 
+UPDATE usuarios
+SET primer_login = 1, contrasena = NULL
+WHERE legajo = '80/001';
+
+
 CREATE TABLE IF NOT EXISTS unidades (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nombre TEXT NOT NULL,

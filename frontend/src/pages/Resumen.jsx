@@ -1,35 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import { guardarInspeccion } from '../services/api';
 
-function Resumen({ unidad, resultados, onBack }) {
+function Resumen({ token, unidad, resultados, onBack }) {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
-  const [modoOffline, setModoOffline] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
 
-  // Escuchar cambios de conectividad
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
-
-  // Escuchar cuando el SW sincronizó una inspección pendiente
-  useEffect(() => {
-    onSyncDone(() => {
-      if (modoOffline) {
-        setMensaje('✅ Inspección sincronizada con el servidor.');
-        setModoOffline(false);
-      }
-    });
-  }, [modoOffline]);
 
   const conteo = useMemo(() => {
     return resultados.reduce(
@@ -42,44 +32,38 @@ function Resumen({ unidad, resultados, onBack }) {
   }, [resultados]);
 
   const handleGuardarClick = () => {
-  setMostrarConfirmacion(true);
-};
+    setMostrarConfirmacion(true);
+  };
 
-const confirmarGuardado = async () => {
-  setGuardando(true);
-  setError(null);
-  
-  try {
-    const response = await fetch(`${API_BASE}/inspecciones`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+  const confirmarGuardado = async () => {
+    setGuardando(true);
+    setError(null);
+    setMensaje(null);
+
+    try {
+      await guardarInspeccion(token, {
         unidad_id: unidad.id,
-        rutina_id: rutina[0].rutina_id,
-        resultados,
+        detalles: resultados.map((item) => ({
+          herramienta_id: item.herramienta_id,
+          estado: item.estado,
+          observacion: item.observacion || null,
+        })),
         notas: '',
-        fecha_inspeccion: new Date().toISOString(),
-      }),
-    });
+      });
 
-    if (!response.ok) {
-      throw new Error(`Error al guardar: ${response.status}`);
+      setMensaje('¡Inspección guardada correctamente!');
+      setTimeout(() => onBack(), 1200);
+    } catch (err) {
+      setError(err.message || 'Error al guardar inspección');
+    } finally {
+      setGuardando(false);
     }
-
-    setSuccess('¡Inspección guardada correctamente!');
-    setTimeout(() => onBack(), 1500);
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setGuardando(false);
-  }
-};
+  };
 
   return (
     <main>
       <h2>Resumen — {unidad.nombre}</h2>
 
-      {/* Indicador de conectividad */}
       <div className={`status-badge ${isOnline ? 'online' : 'offline'}`}>
         {isOnline ? '🟢 Con conexión' : '🔴 Sin conexión'}
       </div>
@@ -102,45 +86,36 @@ const confirmarGuardado = async () => {
       </div>
 
       {error && <div className="error">{error}</div>}
-      {mensaje && <div className={modoOffline ? 'warning' : 'success'}>{mensaje}</div>}
+      {mensaje && <div className="success">{mensaje}</div>}
 
       {!mostrarConfirmacion ? (
-  <div className="button-group">
-    <button 
-      onClick={handleGuardarClick}
-      disabled={guardando}
-    >
-      Guardar inspección
-    </button>
-    <button className="secondary" onClick={onBack}>
-      Volver a unidades
-    </button>
-  </div>
-) : (
-  <div className="confirmation-modal">
-    <h3>Confirmar guardado</h3>
-    <p>¿Guardar esta inspección de <strong>{unidad.nombre}</strong>?</p>
-    <p style={{ fontSize: '12px', opacity: 0.8 }}>
-      Resumen: {resultados.filter(r => r.estado === 'ok').length} OK, 
-      {resultados.filter(r => r.estado === 'no_esta').length} No está, 
-      {resultados.filter(r => r.estado === 'sin_acondicionar').length} Sin acondicionar
-    </p>
-    <div className="button-group">
-      <button 
-        onClick={confirmarGuardado} 
-        disabled={guardando}
-      >
-        {guardando ? 'Guardando...' : 'Sí, guardar'}
-      </button>
-      <button 
-        className="secondary" 
-        onClick={() => setMostrarConfirmacion(false)}
-      >
-        Volver a revisar
-      </button>
-    </div>
-  </div>
-)}
+        <div className="button-group">
+          <button onClick={handleGuardarClick} disabled={guardando}>
+            {guardando ? 'Guardando...' : 'Guardar inspección'}
+          </button>
+          <button className="secondary" onClick={onBack}>
+            Volver a unidades
+          </button>
+        </div>
+      ) : (
+        <div className="confirmation-modal">
+          <h3>Confirmar guardado</h3>
+          <p>¿Guardar esta inspección de <strong>{unidad.nombre}</strong>?</p>
+          <p style={{ fontSize: '12px', opacity: 0.8 }}>
+            Resumen: {resultados.filter((r) => r.estado === 'ok').length} OK,
+            {resultados.filter((r) => r.estado === 'no_esta').length} No está,
+            {resultados.filter((r) => r.estado === 'sin_acondicionar').length} Sin acondicionar
+          </p>
+          <div className="button-group">
+            <button onClick={confirmarGuardado} disabled={guardando}>
+              {guardando ? 'Guardando...' : 'Sí, guardar'}
+            </button>
+            <button className="secondary" onClick={() => setMostrarConfirmacion(false)}>
+              Volver a revisar
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
