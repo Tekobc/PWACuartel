@@ -63,9 +63,11 @@ CREATE TABLE IF NOT EXISTS rutina_unidad (
 CREATE TABLE IF NOT EXISTS inspecciones (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   unidad_id INTEGER NOT NULL,
+  user_id INTEGER,
   fecha TEXT NOT NULL DEFAULT (datetime('now')),
   notas TEXT,
-  FOREIGN KEY (unidad_id) REFERENCES unidades(id) ON DELETE CASCADE
+  FOREIGN KEY (unidad_id) REFERENCES unidades(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS inspeccion_detalle (

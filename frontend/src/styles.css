@@ -647,6 +647,73 @@ a:focus-visible {
     border: 1px solid #999;
   }
 }
+
+/* ============================================
+   19. UNIDADES - HEADER CON BOTÓN HISTORIAL
+   ============================================ */
+
+.unidades-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.unidades-header h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+  flex: 1;
+  min-width: 200px;
+}
+
+.btn-historial {
+  padding: 10px 20px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-historial:hover {
+  background: #0b7dda;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-historial:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .btn-historial {
+    padding: 8px 15px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .unidades-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .unidades-header h2 {
+    flex: initial;
+    min-width: auto;
+  }
+  
+  .btn-historial {
+    width: 100%;
+  }
+}
 /* ============================================
    LOGIN Y AUTENTICACIÓN
    ============================================ */

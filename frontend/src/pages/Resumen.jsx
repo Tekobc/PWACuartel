@@ -36,12 +36,24 @@ function Resumen({ token, unidad, resultados, onBack }) {
   };
 
   const confirmarGuardado = async () => {
+    // Validar token ANTES de intentar guardar
+    if (!token) {
+      setError('Sesión expirada. Por favor, inicia sesión de nuevo.');
+      return;
+    }
+
+    // Validar formato JWT (debe tener 3 partes separadas por puntos)
+    if (token.split('.').length !== 3) {
+      setError('Token inválido. Por favor, inicia sesión de nuevo.');
+      return;
+    }
+
     setGuardando(true);
     setError(null);
     setMensaje(null);
 
     try {
-      await guardarInspeccion(token, {
+      const respuesta = await guardarInspeccion(token, {
         unidad_id: unidad.id,
         detalles: resultados.map((item) => ({
           herramienta_id: item.herramienta_id,
@@ -51,10 +63,15 @@ function Resumen({ token, unidad, resultados, onBack }) {
         notas: '',
       });
 
+      // Log del ID para debugging
+      console.log('✅ Inspección guardada con ID:', respuesta.inspectionId);
+
       setMensaje('¡Inspección guardada correctamente!');
+      setMostrarConfirmacion(false);
       setTimeout(() => onBack(), 1200);
     } catch (err) {
       setError(err.message || 'Error al guardar inspección');
+      // El modal permanece abierto para permitir reintentar
     } finally {
       setGuardando(false);
     }
@@ -106,6 +123,9 @@ function Resumen({ token, unidad, resultados, onBack }) {
             {resultados.filter((r) => r.estado === 'no_esta').length} No está,
             {resultados.filter((r) => r.estado === 'sin_acondicionar').length} Sin acondicionar
           </p>
+
+          {error && <div className="error" style={{ marginBottom: '1rem' }}>{error}</div>}
+
           <div className="button-group">
             <button onClick={confirmarGuardado} disabled={guardando}>
               {guardando ? 'Guardando...' : 'Sí, guardar'}

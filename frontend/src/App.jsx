@@ -5,6 +5,7 @@ import PrimerLogin from './pages/PrimerLogin';
 import Unidades from './pages/Unidades';
 import Inspeccion from './pages/Inspeccion';
 import Resumen from './pages/Resumen';
+import Historial from './pages/Historial';
 
 function AppContent() {
   const { user, token, loading, logout } = useContext(AuthContext);
@@ -61,11 +62,15 @@ function AppContent() {
     setPage('unidades');
   };
 
+  const irHistorial = () => {
+    setPage('historial');
+  };
+
   // App autenticada
   return (
     <div className="app-shell">
       <header>
-        <h1>🚒 Cuartel 80</h1>
+        <h1>Central 80</h1>
         <div className="user-info">
           <span>Bienvenido, <strong>{user.nombre}</strong></span>
           <small>({user.legajo})</small>
@@ -82,7 +87,8 @@ function AppContent() {
       {page === 'unidades' && (
         <Unidades 
           token={token}
-          onIniciar={iniciarInspeccion} 
+          onIniciar={iniciarInspeccion}
+          onHistorial={irHistorial}
         />
       )}
       {page === 'inspeccion' && unidad && (
@@ -100,6 +106,12 @@ function AppContent() {
           unidad={unidad} 
           resultados={resultados} 
           onBack={volverAUnidades} 
+        />
+      )}
+      {page === 'historial' && (
+        <Historial 
+          token={token}
+          onBack={volverAUnidades}
         />
       )}
     </div>

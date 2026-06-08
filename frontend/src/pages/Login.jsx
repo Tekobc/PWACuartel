@@ -37,7 +37,7 @@ export default function Login({ onLoginSuccess, onPrimerLogin }) {
     <main className="login-page">
       <div className="login-container">
         <div className="login-header">
-          <h1>🚒 Cuartel 80</h1>
+          <h1>🚒 Central 80</h1>
           <p>Sistema de Inspecciones</p>
         </div>
 
@@ -101,7 +101,7 @@ export default function Login({ onLoginSuccess, onPrimerLogin }) {
 
         <div className="login-footer">
           <p className="text-small">
-            © 2025 Cuartel 80 - Sistema de Inspecciones
+            © 2025 Central 80 - Sistema de Inspecciones
           </p>
         </div>
       </div>

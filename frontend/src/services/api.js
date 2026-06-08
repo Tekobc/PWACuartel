@@ -87,25 +87,52 @@ export async function fetchRutina(token, unidadId) {
 // ============================================
 
 export async function guardarInspeccion(token, datos) {
-  try {
-    const response = await fetch(`${API_BASE}/inspecciones`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(datos)
-    });
+  const MAX_REINTENTOS = 3;
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `Error: ${response.status}`);
+  for (let intento = 1; intento <= MAX_REINTENTOS; intento++) {
+    try {
+      const response = await fetch(`${API_BASE}/inspecciones`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(datos)
+      });
+
+      const statusCode = response.status;
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text(); // ← LEE COMO TEXTO PRIMERO
+
+      console.log('=== RESPUESTA DEL SERVIDOR ===');
+      console.log('Status:', statusCode);
+      console.log('Content-Type:', contentType);
+      console.log('Body:', responseText);
+      console.log('==========================');
+
+      if (!response.ok) {
+        throw new Error(`Error ${statusCode}: ${responseText}`);
+      }
+
+      // SOLO PARSEAR SI ES JSON
+      if (contentType?.includes('application/json')) {
+        return JSON.parse(responseText);
+      } else {
+        console.warn('⚠️ Respuesta no es JSON:', contentType);
+        throw new Error(`Respuesta inválida del servidor: ${contentType}`);
+      }
+    } catch (err) {
+      if (intento === MAX_REINTENTOS) {
+        // Fallar después del 3er intento
+        console.error('Error guardarInspeccion (intento final):', err);
+        throw err;
+      }
+
+      // Esperar antes de reintentar (backoff exponencial: 2s, 4s, 8s)
+      const espera = Math.pow(2, intento) * 1000;
+      console.warn(`Reintentando guardarInspeccion en ${espera / 1000}s (intento ${intento}/${MAX_REINTENTOS})...`);
+      await new Promise(resolve => setTimeout(resolve, espera));
     }
-
-    return response.json();
-  } catch (err) {
-    console.error('Error guardarInspeccion:', err);
-    throw err;
   }
 }
 

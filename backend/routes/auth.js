@@ -11,9 +11,9 @@ router.post('/login', async (req, res) => {
   try {
     let { legajo, contrasena } = req.body;
     
-    if (!legajo || !contrasena) {
+    if (!legajo) {
       return res.status(400).json({ 
-        error: 'Legajo y contraseña requeridos' 
+        error: 'Legajo requerido' 
       });
     }
 
@@ -22,9 +22,7 @@ router.post('/login', async (req, res) => {
       legajo = CENTRAL_PREFIX + legajo;
     }
 
-    const usuario = db.prepare(
-      'SELECT * FROM usuarios WHERE legajo = ?'
-    ).get(legajo);
+    const usuario = await db.get('SELECT * FROM usuarios WHERE legajo = ?', [legajo]);
 
     if (!usuario) {
       return res.status(401).json({ 
@@ -34,30 +32,28 @@ router.post('/login', async (req, res) => {
 
     // Si es primer login, no verifica contraseña
     // TEMPORAL SOLO PARA TESTING
-if (legajo === '80/001') {
-  const token = jwt.sign(
-    {
-      id: usuario.id,
-      legajo: usuario.legajo,
-      nombre: usuario.nombre
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-  );
+    if (legajo === '80/001') {
+      const token = jwt.sign(
+        {
+          id: usuario.id,
+          legajo: usuario.legajo,
+          nombre: usuario.nombre
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      );
 
-  db.prepare(
-    'UPDATE usuarios SET fecha_ultimo_login = CURRENT_TIMESTAMP WHERE id = ?'
-  ).run(usuario.id);
+      await db.run('UPDATE usuarios SET fecha_ultimo_login = CURRENT_TIMESTAMP WHERE id = ?', [usuario.id]);
 
-  return res.json({
-    token,
-    usuario: {
-      id: usuario.id,
-      legajo: usuario.legajo,
-      nombre: usuario.nombre
+      return res.json({
+        token,
+        usuario: {
+          id: usuario.id,
+          legajo: usuario.legajo,
+          nombre: usuario.nombre
+        }
+      });
     }
-  });
-}
     
     
     
@@ -81,13 +77,15 @@ if (legajo === '80/001') {
       });
     }
 
+    if (!contrasena) {
+      return res.status(400).json({ error: 'Contraseña requerida' });
+    }
+
     const contrasenaValida = await bcrypt.compare(contrasena, usuario.contrasena);
 
     if (!contrasenaValida) {
       // Registrar intento fallido
-      db.prepare(
-        'INSERT INTO auditorias_login (usuario_id, legajo, estado) VALUES (?, ?, ?)'
-      ).run(usuario.id, legajo, 'FALLIDO');
+      await db.run('INSERT INTO auditorias_login (usuario_id, legajo, estado) VALUES (?, ?, ?)', [usuario.id, legajo, 'FALLIDO']);
 
       return res.status(401).json({ 
         error: 'Contraseña incorrecta' 
@@ -106,14 +104,10 @@ if (legajo === '80/001') {
     );
 
     // Actualizar último login
-    db.prepare(
-      'UPDATE usuarios SET fecha_ultimo_login = CURRENT_TIMESTAMP WHERE id = ?'
-    ).run(usuario.id);
+    await db.run('UPDATE usuarios SET fecha_ultimo_login = CURRENT_TIMESTAMP WHERE id = ?', [usuario.id]);
 
     // Registrar login exitoso
-    db.prepare(
-      'INSERT INTO auditorias_login (usuario_id, legajo, estado) VALUES (?, ?, ?)'
-    ).run(usuario.id, legajo, 'EXITOSO');
+    await db.run('INSERT INTO auditorias_login (usuario_id, legajo, estado) VALUES (?, ?, ?)', [usuario.id, legajo, 'EXITOSO']);
 
     res.json({
       token,
@@ -154,9 +148,7 @@ router.post('/set-password', async (req, res) => {
     }
 
     // Buscar usuario
-    const usuario = db.prepare(
-      'SELECT * FROM usuarios WHERE id = ?'
-    ).get(usuario_id);
+    const usuario = await db.get('SELECT * FROM usuarios WHERE id = ?', [usuario_id]);
 
     if (!usuario) {
       return res.status(404).json({ 
@@ -169,9 +161,7 @@ router.post('/set-password', async (req, res) => {
     const contrasenaEncriptada = await bcrypt.hash(contrasena, salt);
 
     // Actualizar usuario
-    db.prepare(
-      'UPDATE usuarios SET contrasena = ?, primer_login = 0 WHERE id = ?'
-    ).run(contrasenaEncriptada, usuario_id);
+    await db.run('UPDATE usuarios SET contrasena = ?, primer_login = 0 WHERE id = ?', [contrasenaEncriptada, usuario_id]);
 
     // Generar token
     const token = jwt.sign(
@@ -185,9 +175,7 @@ router.post('/set-password', async (req, res) => {
     );
 
     // Registrar login
-    db.prepare(
-      'INSERT INTO auditorias_login (usuario_id, legajo, estado) VALUES (?, ?, ?)'
-    ).run(usuario.id, usuario.legajo, 'EXITOSO');
+    await db.run('INSERT INTO auditorias_login (usuario_id, legajo, estado) VALUES (?, ?, ?)', [usuario.id, usuario.legajo, 'EXITOSO']);
 
     res.json({
       mensaje: 'Contraseña definida correctamente',
@@ -205,7 +193,7 @@ router.post('/set-password', async (req, res) => {
 });
 
 // POST /auth/change-password - Cambiar contraseña (usuario autenticado)
-router.post('/change-password', (req, res) => {
+router.post('/change-password', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     
@@ -237,9 +225,7 @@ router.post('/change-password', (req, res) => {
     }
 
     // Buscar usuario
-    const usuario = db.prepare(
-      'SELECT * FROM usuarios WHERE id = ?'
-    ).get(decoded.id);
+    const usuario = await db.get('SELECT * FROM usuarios WHERE id = ?', [decoded.id]);
 
     if (!usuario) {
       return res.status(404).json({ 
@@ -265,9 +251,7 @@ router.post('/change-password', (req, res) => {
     const contrasenaNuevaEncriptada = bcrypt.hashSync(contrasenaNueva, salt);
 
     // Actualizar
-    db.prepare(
-      'UPDATE usuarios SET contrasena = ? WHERE id = ?'
-    ).run(contrasenaNuevaEncriptada, decoded.id);
+    await db.run('UPDATE usuarios SET contrasena = ? WHERE id = ?', [contrasenaNuevaEncriptada, decoded.id]);
 
     res.json({ 
       mensaje: 'Contraseña actualizada correctamente' 

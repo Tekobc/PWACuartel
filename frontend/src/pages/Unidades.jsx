@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { obtenerUnidades, obtenerRutina } from '../services/api';
 
-function Unidades({ token, onIniciar }) {
+function Unidades({ token, onIniciar, onVerHistorial, onHistorial }) {
+  const historialAction = onVerHistorial || onHistorial;
   const [unidades, setUnidades] = useState([]);
   const [error, setError] = useState(null);
 
@@ -27,7 +28,14 @@ function Unidades({ token, onIniciar }) {
 
   return (
     <main>
-      <h2>Unidades</h2>
+      <div className="unidades-header">
+        <h2>Unidades</h2>
+        {historialAction && (
+          <button onClick={historialAction} className="btn-historial" aria-label="Ver historial">
+            📋 Ver Historial
+          </button>
+        )}
+      </div>
       {error && <div className="error">{error}</div>}
       <div className="card-list">
         {unidades.map((unidad) => (

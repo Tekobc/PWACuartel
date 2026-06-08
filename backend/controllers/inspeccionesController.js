@@ -21,8 +21,8 @@ async function createInspeccion(req, res, next) {
   try {
     const inspeccionId = await db.transaction(async () => {
       const insertInspeccionResult = await db.run(
-        'INSERT INTO inspecciones (unidad_id, notas) VALUES (?, ?)',
-        [unidad_id, notas || null]
+        'INSERT INTO inspecciones (unidad_id, user_id, notas) VALUES (?, ?, ?)',
+        [unidad_id, req.user.id, notas || null]
       );
 
       const newInspeccionId = insertInspeccionResult.lastID;
@@ -37,7 +37,11 @@ async function createInspeccion(req, res, next) {
       return newInspeccionId;
     });
 
-    res.status(201).json({ id: inspeccionId, unidad_id, notas });
+    res.status(201).json({
+      success: true,
+      inspectionId: inspeccionId,
+      message: 'Inspección guardada correctamente'
+    });
   } catch (error) {
     next(error);
   }
@@ -45,11 +49,16 @@ async function createInspeccion(req, res, next) {
 
 async function getInspecciones(req, res, next) {
   try {
+    const userId = req.user.id;
     const inspecciones = await db.all(
-      `SELECT i.id, i.unidad_id, u.nombre as unidad_nombre, i.fecha, i.notas
+      `SELECT i.id, i.unidad_id, u.nombre as unidad_nombre, i.fecha, i.notas,
+        i.user_id, us.nombre as usuario_nombre, us.legajo as usuario_legajo
        FROM inspecciones i
        JOIN unidades u ON i.unidad_id = u.id
-       ORDER BY i.fecha DESC`
+       LEFT JOIN usuarios us ON i.user_id = us.id
+       WHERE i.user_id = ?
+       ORDER BY i.fecha DESC`,
+      [userId]
     );
 
     if (inspecciones.length === 0) {
