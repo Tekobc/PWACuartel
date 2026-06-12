@@ -1,23 +1,25 @@
 import { useState, useEffect } from 'react';
-import { obtenerInspecciones } from '../services/api';
+import { obtenerInspecciones, obtenerFotosPorInspeccion } from '../services/api';
 import jsPDF from 'jspdf';
 
-function Historial({ token, onBack }) {
+function Historial({ onBack }) {
   const [inspecciones, setInspecciones] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [inspeccionSeleccionada, setInspeccionSeleccionada] = useState(null);
   const [detalles, setDetalles] = useState([]);
+  const [fotos, setFotos] = useState([]);
+  const [cargandoFotos, setCargandoFotos] = useState(false);
 
   useEffect(() => {
     cargarInspecciones();
-  }, [token]);
+  }, []);
 
   const cargarInspecciones = async () => {
     try {
       setCargando(true);
       setError(null);
-      const datos = await obtenerInspecciones(token);
+      const datos = await obtenerInspecciones();
       setInspecciones(datos);
       console.log('✅ Inspecciones cargadas:', datos.length);
     } catch (err) {
@@ -28,30 +30,49 @@ function Historial({ token, onBack }) {
     }
   };
 
-  const verDetalles = (inspeccion) => {
+  const verDetalles = async (inspeccion) => {
     setInspeccionSeleccionada(inspeccion.id);
     setDetalles(inspeccion.detalles || []);
+    
+    // Cargar fotos de esta inspección
+    setCargandoFotos(true);
+    try {
+      const resultado = await obtenerFotosPorInspeccion(inspeccion.id);
+      setFotos(resultado.fotos || []);
+      console.log('📸 Fotos cargadas:', resultado.fotos?.length || 0);
+    } catch (err) {
+      console.error('Error cargando fotos:', err);
+      setFotos([]);
+    } finally {
+      setCargandoFotos(false);
+    }
   };
 
   const cerrarDetalles = () => {
     setInspeccionSeleccionada(null);
     setDetalles([]);
+    setFotos([]);
   };
 
-  const formatearFecha = (fecha) => {
-    if (!fecha) return '-';
-    try {
-      return new Date(fecha).toLocaleDateString('es-AR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return fecha;
-    }
-  };
+const formatearFecha = (fecha) => {
+  if (!fecha) return '-';
+  try {
+    // Si la fecha no tiene 'Z', assumir que es UTC
+    const dateStr = fecha.includes('Z') ? fecha : fecha + 'Z';
+    const date = new Date(dateStr);
+    
+    return date.toLocaleDateString('es-AR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  } catch {
+    return fecha;
+  }
+};
 
   const contarEstados = (detalles) => {
     return {
@@ -222,7 +243,7 @@ function Historial({ token, onBack }) {
                   <div>
                     <h3>{inspeccion.unidad_nombre || `Unidad ${inspeccion.unidad_id}`}</h3>
                     <div className="card-meta">
-                      <span className="fecha">{formatearFecha(inspeccion.fecha)}</span>
+                      <span className="fecha">{inspeccion.fecha}</span>
                       <span className="usuario">
                         👤 {inspeccion.usuario_nombre || 'Usuario desconocido'}
                         {inspeccion.usuario_legajo && ` (${inspeccion.usuario_legajo})`}
@@ -301,7 +322,7 @@ function Historial({ token, onBack }) {
                           {insp.usuario_legajo && ` (${insp.usuario_legajo})`}
                         </p>
                         <p>
-                          <strong>Fecha:</strong> {formatearFecha(insp.fecha)}
+                          <strong>Fecha:</strong> {insp.fecha}
                         </p>
                         {insp.notas && (
                           <p>
@@ -314,6 +335,31 @@ function Historial({ token, onBack }) {
                 </>
               );
             })()}
+
+            {/* GALERÍA DE FOTOS */}
+            {cargandoFotos ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>
+                <p>Cargando fotos...</p>
+              </div>
+            ) : fotos.length > 0 && (
+              <div className="fotos-modal-section">
+                <h4>📸 Fotos de Evidencia</h4>
+                <div className="fotos-galeria-modal">
+                  {fotos.map((foto) => (
+                    <div key={foto.id} className="foto-modal-item">
+                      <img 
+                        src={foto.ruta_servidor} 
+                        alt={`Foto ${foto.id}`}
+                        style={{ width: '100%', height: '120px', borderRadius: '8px', objectFit: 'cover' }}
+                      />
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '0' }}>
+                        {new Date(foto.fecha_carga).toLocaleDateString('es-AR')}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {detalles.length === 0 ? (
               <p className="empty">Sin detalles registrados</p>

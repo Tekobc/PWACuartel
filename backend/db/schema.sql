@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   contrasena TEXT,
   primer_login INTEGER DEFAULT 1,
   activo INTEGER DEFAULT 1,
-  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+  fecha_creacion DATETIME DEFAULT (datetime('now', 'localtime')),
   fecha_ultimo_login DATETIME
 );
 
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS auditorias_login (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   usuario_id INTEGER NOT NULL,
   legajo TEXT NOT NULL,
-  fecha_login DATETIME DEFAULT CURRENT_TIMESTAMP,
+  fecha_login DATETIME DEFAULT (datetime('now', 'localtime')),
   ip TEXT,
   estado TEXT,
   FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS inspecciones (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   unidad_id INTEGER NOT NULL,
   user_id INTEGER,
-  fecha TEXT NOT NULL DEFAULT (datetime('now')),
+  fecha TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
   notas TEXT,
   FOREIGN KEY (unidad_id) REFERENCES unidades(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE SET NULL
@@ -617,3 +617,31 @@ INSERT INTO rutina_unidad (unidad_id, herramienta_id, orden)
 SELECT u.id, h.id, 2
 FROM unidades u, herramientas h
 WHERE u.nombre = 'Sector 4' AND h.nombre = 'CINTA DE PELIGRO';
+
+CREATE TABLE IF NOT EXISTS fotos_inspeccion (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  inspeccion_id INTEGER NOT NULL,
+  herramienta_id INTEGER NOT NULL,
+  user_id INTEGER,
+  filename TEXT NOT NULL UNIQUE,
+  ruta_servidor TEXT NOT NULL,
+  tamaño INTEGER,
+  fecha_carga DATETIME DEFAULT (datetime('now', 'localtime')),
+  hash_sha256 TEXT,
+  FOREIGN KEY (inspeccion_id) REFERENCES inspecciones(id) ON DELETE CASCADE,
+  FOREIGN KEY (herramienta_id) REFERENCES herramientas(id),
+  FOREIGN KEY (user_id) REFERENCES usuarios(id)
+);
+
+-- Tabla de log (opcional, para auditoría)
+CREATE TABLE IF NOT EXISTS fotos_sincronizacion_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  foto_id INTEGER,
+  user_id INTEGER,
+  estado TEXT,
+  mensaje_error TEXT,
+  intento_numero INTEGER,
+  fecha_log DATETIME DEFAULT (datetime('now', 'localtime')),
+  FOREIGN KEY (foto_id) REFERENCES fotos_inspeccion(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES usuarios(id)
+);

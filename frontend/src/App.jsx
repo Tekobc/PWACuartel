@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import PrimerLogin from './pages/PrimerLogin';
@@ -14,6 +14,19 @@ function AppContent() {
   const [rutina, setRutina] = useState([]);
   const [resultados, setResultados] = useState([]);
   const [primerLogin, setPrimerLogin] = useState(null);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Mientras carga la sesión
   if (loading) {
@@ -69,31 +82,40 @@ function AppContent() {
   // App autenticada
   return (
     <div className="app-shell">
-      <header>
-        <h1>Central 80</h1>
-        <div className="user-info">
-          <span>Bienvenido, <strong>{user.nombre}</strong></span>
-          <small>({user.legajo})</small>
-          <button 
-            onClick={logout}
-            className="logout-btn"
-            aria-label="Cerrar sesión"
-          >
-            Salir
-          </button>
+      <nav className="app-nav">
+        <div className="nav-brand">
+          <span className="brand-icon">🚒</span>
+          <span className="brand-name">Central 80</span>
         </div>
-      </header>
+
+        <div className="nav-status">
+          <span className={`conn-dot ${navigator.onLine ? 'online' : 'offline'}`} aria-hidden />
+        </div>
+
+        <div className="nav-user">
+          <span className="user-legajo">{user.legajo}</span>
+          <div style={{color:'var(--text-secondary)'}}>
+            <div style={{fontSize:12}}>{user.nombre}</div>
+          </div>
+          <button onClick={logout} className="btn-ghost" aria-label="Cerrar sesión">Salir</button>
+        </div>
+      </nav>
+      
+      {!isOnline && (
+        <div className="offline-banner" role="status" aria-live="polite">
+          <span>📡</span>
+          <span>Sin conexión — las inspecciones se guardarán localmente</span>
+        </div>
+      )}
 
       {page === 'unidades' && (
         <Unidades 
-          token={token}
           onIniciar={iniciarInspeccion}
           onHistorial={irHistorial}
         />
       )}
       {page === 'inspeccion' && unidad && (
         <Inspeccion 
-          token={token}
           unidad={unidad} 
           rutina={rutina} 
           onFinish={irResumen} 
@@ -102,7 +124,6 @@ function AppContent() {
       )}
       {page === 'resumen' && unidad && (
         <Resumen 
-          token={token}
           unidad={unidad} 
           resultados={resultados} 
           onBack={volverAUnidades} 
@@ -110,7 +131,6 @@ function AppContent() {
       )}
       {page === 'historial' && (
         <Historial 
-          token={token}
           onBack={volverAUnidades}
         />
       )}

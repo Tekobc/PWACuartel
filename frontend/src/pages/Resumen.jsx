@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { guardarInspeccion } from '../services/api';
+import fotoService from '../services/fotoService.js';
 
-function Resumen({ token, unidad, resultados, onBack }) {
+function Resumen({ unidad, resultados, onBack }) {
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
@@ -36,42 +37,45 @@ function Resumen({ token, unidad, resultados, onBack }) {
   };
 
   const confirmarGuardado = async () => {
-    // Validar token ANTES de intentar guardar
-    if (!token) {
-      setError('Sesión expirada. Por favor, inicia sesión de nuevo.');
-      return;
-    }
-
-    // Validar formato JWT (debe tener 3 partes separadas por puntos)
-    if (token.split('.').length !== 3) {
-      setError('Token inválido. Por favor, inicia sesión de nuevo.');
-      return;
-    }
-
     setGuardando(true);
     setError(null);
     setMensaje(null);
 
     try {
-      const respuesta = await guardarInspeccion(token, {
-        unidad_id: unidad.id,
-        detalles: resultados.map((item) => ({
+      // Guardar inspección (el token se obtiene automáticamente del localStorage)
+      const respuesta = await guardarInspeccion(
+        resultados.map((item) => ({
           herramienta_id: item.herramienta_id,
+          herramienta_nombre: item.herramienta_nombre,
           estado: item.estado,
           observacion: item.observacion || null,
         })),
-        notas: '',
-      });
+        unidad.id
+      );
 
-      // Log del ID para debugging
-      console.log('✅ Inspección guardada con ID:', respuesta.inspectionId);
+      console.log('✅ Inspección guardada con ID:', respuesta.id);
+
+      // Asignar inspeccion_id a las fotos pendientes
+      if (respuesta.id) {
+        await fotoService.asignarInspeccionIdAFotos(respuesta.id);
+
+        // Sincronizar fotos si hay conexión
+        if (navigator.onLine) {
+          console.log('📡 Sincronizando fotos...');
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            const syncResult = await fotoService.sincronizarTodas(token);
+            console.log('Fotos sincronizadas:', syncResult);
+          }
+        }
+      }
 
       setMensaje('¡Inspección guardada correctamente!');
       setMostrarConfirmacion(false);
       setTimeout(() => onBack(), 1200);
     } catch (err) {
       setError(err.message || 'Error al guardar inspección');
-      // El modal permanece abierto para permitir reintentar
+      console.error('Error:', err);
     } finally {
       setGuardando(false);
     }
@@ -88,7 +92,7 @@ function Resumen({ token, unidad, resultados, onBack }) {
       <div className="summary-grid">
         <div className="summary-card ok">OK: {conteo.ok}</div>
         <div className="summary-card noesta">No está: {conteo.no_esta}</div>
-        <div className="summary-card sinac">Sin acondicionar: {conteo.sin_acondicionar}</div>
+        <div className="summary-card sinacondicionar">Sin acondicionar: {conteo.sin_acondicionar}</div>
       </div>
 
       <div className="results-list">
